@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Counter Toy</string>
+    <string name="toy_name">Counter</string>
+    <string name="toy_summary">Long-press to count up, shake to reset.</string>
+</resources>
