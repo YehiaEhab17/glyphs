@@ -1,0 +1,4 @@
+temp_apk/
+*.zip
+*.so
+local.properties
