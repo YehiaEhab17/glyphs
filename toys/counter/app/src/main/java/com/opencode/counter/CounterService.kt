@@ -44,7 +44,7 @@ class CounterService : Service(), SensorEventListener {
                     val dataBundle = msg.data ?: return
                     val event = dataBundle.getString(GlyphToy.MSG_GLYPH_TOY_DATA)
                     
-                    if (event == GlyphToy.EVENT_CHANGE) {
+                    if (event == GlyphToy.EVENT_ACTION_DOWN) {
                         incrementCount()
                     } else if (event == GlyphToy.EVENT_AOD) {
                         updateMatrix()
