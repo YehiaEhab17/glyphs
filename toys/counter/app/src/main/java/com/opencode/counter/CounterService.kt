@@ -36,9 +36,11 @@ class CounterService : Service(), SensorEventListener {
             when (msg.what) {
                 // MSG_GLYPH_TOY = 1
                 1 -> {
-                    val event = msg.data.getString("event")
-                    if (event == "action_down") {
-                        // Long press detected
+                    val dataBundle = msg.data ?: return
+                    // Use all common keys they might send
+                    val event = dataBundle.getString("data") ?: dataBundle.getString("event") ?: dataBundle.getString(com.nothing.ketchum.GlyphToy.MSG_GLYPH_TOY_DATA)
+                    if (event == com.nothing.ketchum.GlyphToy.EVENT_CHANGE || event == "change" || event == com.nothing.ketchum.GlyphToy.EVENT_ACTION_DOWN || event == "action_down") {
+                        // Press detected
                         incrementCount()
                     }
                 }
@@ -111,9 +113,22 @@ class CounterService : Service(), SensorEventListener {
     }
 
     private fun updateMatrix() {
-        // We will implement the digit drawing logic here
-        // For now, let's just log it
         Log.d("CounterService", "Count is now: $count")
+        try {
+            val text = String.format("%04d", count)
+            val matrixObject = com.nothing.ketchum.GlyphMatrixObject.Builder()
+                .setText(text)
+                .setPosition(2, 3) // Specific for Phone 3
+                .build()
+                
+            val frame = com.nothing.ketchum.GlyphMatrixFrame.Builder()
+                .addTop(matrixObject)
+                .build(applicationContext)
+                
+            glyphMatrixManager.setMatrixFrame(frame.render())
+        } catch (e: Exception) {
+            Log.e("CounterService", "Failed to update matrix", e)
+        }
     }
 
     // --- SensorEventListener ---
