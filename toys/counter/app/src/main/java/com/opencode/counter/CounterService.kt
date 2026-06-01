@@ -16,7 +16,13 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import android.util.Log
+import com.nothing.ketchum.Common
+import com.nothing.ketchum.Glyph
+import com.nothing.ketchum.GlyphFrame
+import com.nothing.ketchum.GlyphMatrixFrame
 import com.nothing.ketchum.GlyphMatrixManager
+import com.nothing.ketchum.GlyphMatrixObject
+import com.nothing.ketchum.GlyphToy
 import kotlin.math.sqrt
 
 class CounterService : Service(), SensorEventListener {
@@ -34,17 +40,13 @@ class CounterService : Service(), SensorEventListener {
     private val handler = object : Handler(Looper.getMainLooper()) {
         override fun handleMessage(msg: Message) {
             when (msg.what) {
-                // MSG_GLYPH_TOY = 1
                 1 -> {
                     val dataBundle = msg.data ?: return
-                    val event = dataBundle.getString("data") ?: dataBundle.getString("event") ?: dataBundle.getString(com.nothing.ketchum.GlyphToy.MSG_GLYPH_TOY_DATA)
+                    val event = dataBundle.getString(GlyphToy.MSG_GLYPH_TOY_DATA)
                     
-                    if (event == com.nothing.ketchum.GlyphToy.EVENT_CHANGE || event == "change" || event == com.nothing.ketchum.GlyphToy.EVENT_ACTION_DOWN || event == "action_down") {
-                        // Press detected
+                    if (event == GlyphToy.EVENT_CHANGE) {
                         incrementCount()
-                    } else if (event == com.nothing.ketchum.GlyphToy.EVENT_AOD || event == "aod") {
-                        // Phone entered AOD mode - refresh the matrix to ensure it stays visible
-                        Log.d("CounterService", "Entered AOD mode")
+                    } else if (event == GlyphToy.EVENT_AOD) {
                         updateMatrix()
                     }
                 }
@@ -57,23 +59,27 @@ class CounterService : Service(), SensorEventListener {
         super.onCreate()
         Log.d("CounterService", "Service Created")
         
-        // Setup Sensors
         sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
         accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
         
-        // Setup Vibrator
         val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
         vibrator = vibratorManager.defaultVibrator
         
-        // Load saved count
         val prefs = getSharedPreferences("CounterPrefs", Context.MODE_PRIVATE)
         count = prefs.getInt("count", 0)
         
-        // Init Glyph
         glyphMatrixManager = GlyphMatrixManager.getInstance(applicationContext)
         glyphMatrixManager.init(object : GlyphMatrixManager.Callback {
             override fun onServiceConnected(componentName: android.content.ComponentName) {
-                glyphMatrixManager.register("24111") // Registering for P3
+                when {
+                    Common.is25111p() -> glyphMatrixManager.register(Glyph.DEVICE_25111p)
+                    Common.is25111() -> glyphMatrixManager.register(Glyph.DEVICE_25111)
+                    Common.is24111() -> glyphMatrixManager.register(Glyph.DEVICE_24111)
+                    Common.is23112() -> glyphMatrixManager.register(Glyph.DEVICE_23112)
+                    Common.is23111() -> glyphMatrixManager.register(Glyph.DEVICE_23111)
+                    Common.is23113() -> glyphMatrixManager.register(Glyph.DEVICE_23113)
+                    else -> glyphMatrixManager.register(Glyph.DEVICE_24111)
+                }
                 updateMatrix()
             }
             override fun onServiceDisconnected(componentName: android.content.ComponentName) {}
@@ -117,15 +123,14 @@ class CounterService : Service(), SensorEventListener {
     }
 
     private fun updateMatrix() {
-        Log.d("CounterService", "Count is now: $count")
         try {
             val text = String.format("%04d", count)
-            val matrixObject = com.nothing.ketchum.GlyphMatrixObject.Builder()
+            val matrixObject = GlyphMatrixObject.Builder()
                 .setText(text)
-                .setPosition(2, 3) // Specific for Phone 3
+                .setPosition(2, 3)
                 .build()
                 
-            val frame = com.nothing.ketchum.GlyphMatrixFrame.Builder()
+            val frame = GlyphMatrixFrame.Builder()
                 .addTop(matrixObject)
                 .build(applicationContext)
                 
@@ -135,7 +140,6 @@ class CounterService : Service(), SensorEventListener {
         }
     }
 
-    // --- SensorEventListener ---
     override fun onSensorChanged(event: SensorEvent) {
         val x = event.values[0] / SensorManager.GRAVITY_EARTH
         val y = event.values[1] / SensorManager.GRAVITY_EARTH
