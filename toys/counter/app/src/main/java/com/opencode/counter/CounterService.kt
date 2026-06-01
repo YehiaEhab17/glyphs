@@ -37,11 +37,15 @@ class CounterService : Service(), SensorEventListener {
                 // MSG_GLYPH_TOY = 1
                 1 -> {
                     val dataBundle = msg.data ?: return
-                    // Use all common keys they might send
                     val event = dataBundle.getString("data") ?: dataBundle.getString("event") ?: dataBundle.getString(com.nothing.ketchum.GlyphToy.MSG_GLYPH_TOY_DATA)
+                    
                     if (event == com.nothing.ketchum.GlyphToy.EVENT_CHANGE || event == "change" || event == com.nothing.ketchum.GlyphToy.EVENT_ACTION_DOWN || event == "action_down") {
                         // Press detected
                         incrementCount()
+                    } else if (event == com.nothing.ketchum.GlyphToy.EVENT_AOD || event == "aod") {
+                        // Phone entered AOD mode - refresh the matrix to ensure it stays visible
+                        Log.d("CounterService", "Entered AOD mode")
+                        updateMatrix()
                     }
                 }
             }
