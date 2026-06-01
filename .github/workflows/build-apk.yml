@@ -2,8 +2,6 @@ name: Build Counter APK
 
 on:
   push:
-    paths:
-      - 'toys/counter/**'
   workflow_dispatch:
 
 permissions:
